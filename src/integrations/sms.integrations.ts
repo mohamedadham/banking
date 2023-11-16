@@ -10,6 +10,10 @@ export class TwilioService {
     const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
     const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 
+    if (!twilioAccountSid || !twilioAuthToken) {
+      return;
+    }
+
     this.client = twilio(twilioAccountSid, twilioAuthToken);
   }
 

@@ -5,7 +5,11 @@ import { AccountsController } from './accounts.controller';
 import { AccountsRepository } from './accounts.repository';
 
 @Module({
-  providers: [AccountsService, PrismaService, AccountsRepository],
+  providers: [
+    AccountsService,
+    PrismaService,
+    { provide: 'IAccountsRepository', useClass: AccountsRepository },
+  ],
   controllers: [AccountsController],
 })
 export class AccountsModule {}

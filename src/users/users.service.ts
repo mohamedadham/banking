@@ -2,11 +2,14 @@ import { IUsersRepository } from './users.repository.interface';
 import { EntityAlreadyExistError } from './../errors/custom-errors';
 import { User } from '@prisma/client';
 import { UserDto } from './users.dto';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: IUsersRepository) {}
+  constructor(
+    @Inject('IUsersRepository')
+    private readonly usersRepository: IUsersRepository,
+  ) {}
 
   async createUser(user: User) {
     const existingUser = await this.usersRepository.getUserByEmailOrUsername(
@@ -32,7 +35,7 @@ export class UsersService {
     return users;
   }
 
-  async getUserById(id: number): Promise<UserDto | null> {
+  async getUserById(id: number): Promise<User | null> {
     const user = await this.usersRepository.getUserById(id);
     if (!user) {
       return null;

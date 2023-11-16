@@ -1,3 +1,5 @@
+import { UsersService } from './../users/users.service';
+import { TwilioService } from './../integrations/sms.integrations';
 import {
   Controller,
   Get,
@@ -17,7 +19,11 @@ import {
 
 @Controller('transactions')
 export class TransactionsController {
-  constructor(private readonly transactionsService: TransactionsService) {}
+  constructor(
+    private readonly transactionsService: TransactionsService,
+    private readonly twilioService: TwilioService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Get()
   async getAllTransactions(): Promise<Transaction[]> {
@@ -54,15 +60,38 @@ export class TransactionsController {
   @Post('transfer')
   async transfer(@Body() body: transferTransactionDto): Promise<void> {
     await this.transactionsService.transfer(body.from, body.to, body.amount);
+    const sender = await this.usersService.getUserById(body.from);
+    const reciever = await this.usersService.getUserById(body.to);
+
+    // Send SMS notification to the sender.
+    await this.twilioService.sendSMS(
+      `+2${sender.phoneNumber}`,
+      `You have successfully transferred ${body.amount} to ${reciever.phoneNumber}`,
+    );
   }
 
   @Post('withdrawal')
   async withdrawal(@Body() body: WithdrawTransactionDto): Promise<void> {
     await this.transactionsService.withdrawal(body.accountId, body.amount);
+    // Send a notification to the user.
+    const user = await this.usersService.getUserById(body.accountId);
+
+    await this.twilioService.sendSMS(
+      `+2${user.phoneNumber}`,
+      `Your withdrawal of ${body.amount} was successful`,
+    );
   }
 
   @Post('deposit')
   async deposit(@Body() body: DepositTransactionDto): Promise<void> {
     await this.transactionsService.deposit(body.accountId, body.amount);
+
+    // Send a SMS notification to the user.
+    const user = await this.usersService.getUserById(body.accountId);
+
+    await this.twilioService.sendSMS(
+      `+2${user.phoneNumber}`,
+      `Your account has been credited with ${body.amount}`,
+    );
   }
 }

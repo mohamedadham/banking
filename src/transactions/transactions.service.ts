@@ -1,10 +1,10 @@
+import { IUsersRepository } from './../users/users.repository.interface';
+import { IAccountsRepository } from './../accounts/accounts.repository.interface';
 import { ITransactionsRepository } from './transaction.repository.interface';
-import { UsersRepository } from './../users/users.repository';
 import { TwilioService } from './../integrations/sms.integrations';
 import { PrismaService } from './../../prisma/prisma.service';
-import { AccountsRepository } from './../accounts/accounts.repository';
 import { Transaction } from '@prisma/client';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import {
   InsufficientBalanceError,
@@ -14,11 +14,13 @@ import {
 @Injectable()
 export class TransactionsService {
   constructor(
+    @Inject('ITransactionsRepository')
     private readonly transactionsRepository: ITransactionsRepository,
-    private readonly accountsRepository: AccountsRepository,
+    @Inject('IAccountsRepository')
+    private readonly accountsRepository: IAccountsRepository,
     private readonly prisma: PrismaService,
-    private readonly twilioService: TwilioService,
-    private readonly UsersRepository: UsersRepository,
+    @Inject('IUsersRepository')
+    private readonly UsersRepository: IUsersRepository,
   ) {}
 
   async getAllTransactions(): Promise<Transaction[]> {
@@ -77,14 +79,6 @@ export class TransactionsService {
         withDrawFromAccount,
         withdrawTransaction,
       ]);
-
-      // Send a notification to the user.
-      const user = await this.UsersRepository.getUserById(account.userId);
-
-      await this.twilioService.sendSMS(
-        user.phoneNumber,
-        `Your account has been credited with ${amount}`,
-      );
     } catch (error) {
       await this.transactionsRepository.createTransaction({
         senderAccountId: accountId,
@@ -132,14 +126,6 @@ export class TransactionsService {
         withDrawFromAccount,
         withdrawTransaction,
       ]);
-
-      // Send a notification to the user.
-      const user = await this.UsersRepository.getUserById(account.userId);
-
-      await this.twilioService.sendSMS(
-        user.phoneNumber,
-        `Your withdrawal of ${amount} was successful`,
-      );
     } catch (error) {
       await this.transactionsRepository.createTransaction({
         senderAccountId: accountId,
@@ -204,14 +190,6 @@ export class TransactionsService {
         depositBalance,
         createTransferTransaction,
       ]);
-
-      const sender = await this.UsersRepository.getUserById(fromAccount.userId);
-
-      // Send SMS notification to the sender.
-      await this.twilioService.sendSMS(
-        `+2${sender.phoneNumber}`,
-        `You have successfully transferred ${amount} to ${toAccount.accountNumber}`,
-      );
     } catch (error) {
       // Create a new transaction record.
       await this.transactionsRepository.createTransaction({
