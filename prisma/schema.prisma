@@ -1,0 +1,75 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output = "../node_modules/.prisma/client"
+  binaryTargets = ["native", "linux-arm64-openssl-1.1.x"]
+
+}
+
+
+model User {
+  id Int @id @default(autoincrement())
+  username String @unique
+  email String @unique
+  password String
+  firstName String
+  lastName String
+  dateOfBirth DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  phoneNumber String @unique
+
+  // Relations
+  accounts Account[]
+}
+
+enum AccountType {
+  SAVING
+  CURRENT
+}
+
+model Account {
+  id Int @id @default(autoincrement())
+  userId Int 
+  accountType AccountType
+  accountNumber String @unique
+  balance Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id])
+  transactionsFrom Transaction[] @relation("FromAccount")
+  transactionsTo Transaction[] @relation("ToAccount")
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TransactionType {
+  TRANSFER
+  DEPOSIT
+  WITHDRAWAL
+}
+
+model Transaction {
+  id Int @id @default(autoincrement())
+  senderAccountId Int 
+  receiverAccountId Int 
+  amount Decimal
+  transactionType TransactionType
+  transactionStatus TransactionStatus
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  senderAccount Account @relation("FromAccount", fields: [senderAccountId], references: [id])
+  receiverAccount Account @relation("ToAccount", fields: [receiverAccountId], references: [id])
+}
